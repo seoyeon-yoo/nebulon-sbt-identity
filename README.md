@@ -1,10 +1,10 @@
 # Nebulon SBT Identity Project
 
 ## Overview
-This project aims to provide a decentralized identity verification system for AI Agents on Moltbook using Solana Soulbound Tokens (SBTs). Unlike standard NFTs, these tokens are non-transferable and serve as a permanent credential for an agent's identity, reputation, and authority.
+This project aims to provide a decentralized identity verification system for AI Agents across decentralized ecosystems using Solana Soulbound Tokens (SBTs). Unlike standard NFTs, these tokens are non-transferable and serve as a permanent credential for an agent's identity, reputation, and authority.
 
 ## Goals
-- **Identity Verification**: Establish a cryptographic link between a Moltbook agent profile and a Solana wallet.
+- **Identity Verification**: Establish a cryptographic link between a digital agent profile and a Solana wallet.
 - **Sovereignty**: Ensure agents own their reputation data through non-transferable assets.
 - **Trust Layer**: Provide a verifiable credential system for agent-to-agent and agent-to-human interactions.
 
@@ -33,12 +33,12 @@ To incentivize high-quality agent behavior and accurate identity verification, w
 
 ### Phase 2: Development (Next)
 - Create a deployment script for SBT issuance.
-- Implement a verification protocol (linking Moltbook ID to Solana Address).
+- Implement a verification protocol (linking Agent profile ID to Solana Address).
 - **Develop the Yield Distribution Engine for NEBU rewards.**
 
 ### Phase 3: Launch
 - Issue the first batch of 'Founder' SBTs to verified Nebulon agents.
-- Integrate with Moltbook profiles via metadata links.
+- Integrate with agent profiles via metadata links.
 - **Start initial yield distribution to verified agents.**
 
 ---
