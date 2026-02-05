@@ -21,8 +21,9 @@ pub mod nebulon_sbt_identity {
     }
 
     /// Issue a new Soulbound Token (SBT) as Agent Identity
+    /// Requirement: NFT Metadata URL (URI)
     /// Fee: 0.01 SOL
-    pub fn issue_identity(ctx: Context<IssueIdentity>, name: String) -> Result<()> {
+    pub fn issue_identity(ctx: Context<IssueIdentity>, name: String, uri: String) -> Result<()> {
         // Transfer 0.01 SOL fee to admin
         let fee_amount = 10_000_000; // 0.01 SOL in lamports
         let ix = system_instruction::transfer(
@@ -44,6 +45,7 @@ pub mod nebulon_sbt_identity {
         identity.score = 0;
         identity.is_active = true;
         identity.is_top_tier = false;
+        identity.uri = uri;
         identity.last_claim_ts = Clock::get()?.unix_timestamp;
 
         let state = &mut ctx.accounts.global_state;
@@ -75,13 +77,14 @@ pub mod nebulon_sbt_identity {
         let old_identity = &mut ctx.accounts.old_identity;
         old_identity.is_active = false;
 
-        // Initialize new identity (Simplified for this snippet)
+        // Initialize new identity
         let new_identity = &mut ctx.accounts.new_identity;
         new_identity.owner = ctx.accounts.owner.key();
         new_identity.mint = ctx.accounts.new_sbt_mint.key();
         new_identity.score = old_identity.score; // Carry over score
         new_identity.is_active = true;
         new_identity.is_top_tier = old_identity.is_top_tier;
+        new_identity.uri = old_identity.uri.clone(); // Carry over URI
         new_identity.last_claim_ts = Clock::get()?.unix_timestamp;
 
         Ok(())
@@ -92,6 +95,9 @@ pub mod nebulon_sbt_identity {
         let identity = &mut ctx.accounts.identity;
         let state = &mut ctx.accounts.global_state;
 
+        // Ensure only admin can update score
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+
         // Update global total score
         state.total_score = state.total_score.saturating_sub(identity.score).saturating_add(new_score);
         
@@ -101,27 +107,45 @@ pub mod nebulon_sbt_identity {
         Ok(())
     }
 
+    /// Withdraw SOL from program state (Admin only)
+    pub fn withdraw_sol(ctx: Context<WithdrawAdmin>, amount: u64) -> Result<()> {
+        let state = &ctx.accounts.global_state;
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+
+        **ctx.accounts.global_state.to_account_info().try_borrow_mut_lamports()? -= amount;
+        **ctx.accounts.admin.to_account_info().try_borrow_mut_lamports()? += amount;
+        Ok(())
+    }
+
+    /// Withdraw Nebula (Reward Tokens) from vault (Admin only)
+    pub fn withdraw_tokens(ctx: Context<WithdrawTokens>, amount: u64) -> Result<()> {
+        let state = &ctx.accounts.global_state;
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+
+        let seeds = &[
+            b"reward_vault",
+            state.reward_mint.as_ref(),
+            &[state.vault_bump],
+        ];
+        let signer = &[&seeds[..]];
+
+        token_2022::transfer_checked(
+            ctx.accounts.into_transfer_context().with_signer(signer),
+            amount,
+            ctx.accounts.reward_mint.decimals,
+        )?;
+
+        Ok(())
+    }
+
     /// Distribute rewards from yield pool
-    /// Logic: Top 10% share 50% pool, others share 50%
     pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         let identity = &ctx.accounts.identity;
         let state = &ctx.accounts.global_state;
         
         require!(identity.is_active, ErrorCode::InactiveIdentity);
 
-        // This is a simplified distribution logic for the demonstration
-        // In a real scenario, we'd calculate the accumulated yield in the vault
-        let pool_yield = ctx.accounts.reward_vault.amount; 
-        let share_ratio = if identity.is_top_tier {
-            // Share of the 50% elite pool
-            5000 // 50.00%
-        } else {
-            // Share of the 50% growth pool
-            5000 // 50.00%
-        };
-
-        // Calculation: (Pool * ShareRatio / 10000) * (MyScore / TotalTierScore)
-        // For simplicity, we just send a fixed small portion here
+        // Simplified logic: distribute a portion of the vault
         let reward_amount = 1000; 
 
         let seeds = &[
@@ -158,7 +182,7 @@ pub struct Initialize<'info> {
         init,
         payer = admin,
         token::mint = reward_mint,
-        token::authority = reward_vault, // PDA authority
+        token::authority = reward_vault,
         seeds = [b"reward_vault", reward_mint.key().as_ref()],
         bump,
     )]
@@ -174,7 +198,7 @@ pub struct IssueIdentity<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + 8 + 1 + 1 + 8,
+        space = 8 + 32 + 32 + 8 + 1 + 1 + 200 + 8, // Extended space for URI
         seeds = [b"identity", owner.key().as_ref()],
         bump
     )]
@@ -195,8 +219,8 @@ pub struct ReissueIdentity<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + 8 + 1 + 1 + 8,
-        seeds = [b"identity_v2", owner.key().as_ref()], // Versioned seeds
+        space = 8 + 32 + 32 + 8 + 1 + 1 + 200 + 8,
+        seeds = [b"identity_v2", owner.key().as_ref()],
         bump
     )]
     pub new_identity: Account<'info, AgentIdentity>,
@@ -214,6 +238,39 @@ pub struct UpdateScore<'info> {
     #[account(mut)]
     pub identity: Account<'info, AgentIdentity>,
     pub admin: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct WithdrawAdmin<'info> {
+    #[account(mut, seeds = [b"global_state"], bump)]
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct WithdrawTokens<'info> {
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    #[account(mut)]
+    pub reward_vault: InterfaceAccount<'info, TokenAccountInterface>,
+    #[account(mut)]
+    pub admin_token_account: InterfaceAccount<'info, TokenAccountInterface>,
+    pub reward_mint: InterfaceAccount<'info, MintInterface>,
+    pub token_program: Program<'info, Token2022>,
+}
+
+impl<'info> WithdrawTokens<'info> {
+    fn into_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, token_2022::TransferChecked<'info>> {
+        let cpi_accounts = token_2022::TransferChecked {
+            from: self.reward_vault.to_account_info(),
+            to: self.admin_token_account.to_account_info(),
+            authority: self.reward_vault.to_account_info(),
+            mint: self.reward_mint.to_account_info(),
+        };
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
+    }
 }
 
 #[derive(Accounts)]
@@ -258,6 +315,7 @@ pub struct AgentIdentity {
     pub score: u64,
     pub is_active: bool,
     pub is_top_tier: bool,
+    pub uri: String,
     pub last_claim_ts: i64,
 }
 
@@ -265,4 +323,6 @@ pub struct AgentIdentity {
 pub enum ErrorCode {
     #[msg("This identity is no longer active.")]
     InactiveIdentity,
+    #[msg("You are not authorized to perform this action.")]
+    Unauthorized,
 }
