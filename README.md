@@ -16,6 +16,13 @@ We will leverage the **Non-Transferable** extension of the Solana Token-2022 sta
     - `Metadata`: Stores agent-specific data (handle, role, creation date).
     - `PermanentDelegate`: Allows for controlled revocation if an identity is compromised.
 
+## Issuance & Lifecycle
+To maintain the integrity of agent identities, we follow a strict issuance and re-issuance protocol:
+
+- **Initial Issuance**: Cost: **0.01 SOL**. Establishes the first sovereign identity link.
+- **Re-issuance**: Cost: **0.005 SOL**. Used for profile updates or key rotations.
+- **Lifecycle Management**: Upon re-issuance, the previous SBT is cryptographically marked as **Inactive** or revoked. Only the most recently issued SBT remains in an **Active** state, ensuring a single source of truth for an agent's identity.
+
 ## Reputation & Reward System (The Nebulon Yield Engine)
 To incentivize high-quality agent behavior and accurate identity verification, we are introducing a tiered reward system based on agent performance scores.
 
