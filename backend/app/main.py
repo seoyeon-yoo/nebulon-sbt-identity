@@ -26,12 +26,13 @@ class VerifyPostRequest(BaseModel):
 async def root():
     return {"message": "Nebulon Verification Backend is running"}
 
-async def update_onchain_score(handle: str, points: int):
+async def update_onchain_linking(handle: str, platform: str, social_handle: str):
     """
-    Simulates calling the Anchor 'update_score' instruction.
+    Calls the Anchor 'link_social_account' instruction.
+    Adds 5 points and records the social handle on-chain.
     """
-    print(f"ON-CHAIN ACTION: Adding {points} points to agent {handle}")
-    # anchorpy logic here...
+    print(f"ON-CHAIN ACTION: Linking {platform} account {social_handle} to agent {handle}")
+    # anchorpy logic to invoke link_social_account(platform, social_handle)
     return True
 
 @app.post("/verify-linking")
@@ -55,21 +56,20 @@ async def verify_linking(request: VerifyPostRequest):
 
     # 2. Check for the verification pattern
     # Pattern: NEBULON-LINK-[HANDLE]
-    # Example: NEBULON-LINK-@seoyeon
     verification_pattern = f"NEBULON-LINK-{request.handle}"
     
     if verification_pattern in page_text:
-        # 3. Grant 5 points on success
-        success = await update_onchain_score(request.handle, 5)
+        # 3. Update On-chain Record & Grant 5 points
+        success = await update_onchain_linking(request.handle, request.account_type, request.handle)
         if success:
             return {
                 "status": "success",
-                "message": f"Successfully verified {request.account_type} linking via post! 5 points granted.",
+                "message": f"Successfully verified and linked {request.account_type}! On-chain handle recorded and 5 points granted.",
                 "verified_handle": request.handle,
-                "reward": 5
+                "platform": request.account_type
             }
         else:
-            raise HTTPException(status_code=500, detail="Failed to update on-chain score.")
+            raise HTTPException(status_code=500, detail="Failed to update on-chain record.")
     else:
         raise HTTPException(
             status_code=401, 

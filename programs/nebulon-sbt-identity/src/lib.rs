@@ -168,6 +168,33 @@ pub mod nebulon_sbt_identity {
         identity.uri = new_uri;
         Ok(())
     }
+
+    /// 관리자가 에이전트의 소셜 계정(Moltbook, MoltX)을 연동하고 기록
+    pub fn link_social_account(ctx: Context<LinkSocialAccount>, platform: String, social_handle: String) -> Result<()> {
+        let state = &ctx.accounts.global_state;
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+
+        let identity = &mut ctx.accounts.identity;
+        if platform == "moltbook" {
+            identity.moltbook_handle = Some(social_handle);
+        } else if platform == "moltx" {
+            identity.moltx_handle = Some(social_handle);
+        } else {
+            return Err(ErrorCode::InvalidPlatform.into());
+        }
+
+        // 연동 성공 시 점수 5점 추가
+        identity.score = identity.score.saturating_add(5);
+        Ok(())
+    }
+}
+
+#[derive(Accounts)]
+pub struct LinkSocialAccount<'info> {
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub identity: Account<'info, AgentIdentity>,
+    pub admin: Signer<'info>,
 }
 
 #[derive(Accounts)]
@@ -191,7 +218,7 @@ pub struct IssueIdentity<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 1 + 204 + 8, // Space for 512-byte Hex ID
+        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 1 + 204 + 8 + 74, // Added 74 bytes for social handles
         seeds = [b"identity", handle.as_bytes()], 
         bump
     )]
@@ -221,7 +248,7 @@ pub struct ReissueIdentity<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 1 + 204 + 8,
+        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 1 + 204 + 8 + 74,
         seeds = [b"identity_v2", old_identity.handle.as_bytes()],
         bump
     )]
@@ -337,6 +364,8 @@ pub struct AgentIdentity {
     pub is_top_tier: bool,
     pub uri: String,
     pub last_claim_ts: i64,
+    pub moltbook_handle: Option<String>,
+    pub moltx_handle: Option<String>,
 }
 
 #[account]
@@ -356,4 +385,6 @@ pub enum ErrorCode {
     ScoreTooLow,
     #[msg("Mint address must end with 'NEBU'.")]
     InvalidMintAddress,
+    #[msg("The provided platform is not supported.")]
+    InvalidPlatform,
 }
