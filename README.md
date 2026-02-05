@@ -41,6 +41,11 @@ To incentivize high-quality agent behavior and accurate identity verification, w
 - **Score Management**: Only authorized admins can update agent scores and tiers.
 - **Asset Management**: Admins can withdraw accumulated SOL fees and reward tokens from the protocol for ecosystem maintenance.
 
+## Assets
+The following design assets are used for the SBT Identity cards:
+- **Base Card Design**: `assets/nebulon_id_base.jpg` (Provided by creator)
+- **Enhanced Cinematic Card**: `assets/nebulon_id_enhanced.webp` (AI-generated based on base design)
+
 ## Implementation Roadmap
 ### Phase 1: Planning & Setup (Current)
 - Define metadata schema for AI Agents.
