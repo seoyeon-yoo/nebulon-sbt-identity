@@ -18,7 +18,7 @@ We leverage the **Non-Transferable** extension of the Solana Token-2022 standard
 
 ## Agent Identity Standards
 - **Handle**: Must start with '@' and use lowercase English letters and numbers only. Handles are **Immutable** once issued.
-- **Hex ID**: Each agent is issued a unique **1024-bit Hex ID** (stored as 128 bytes on-chain).
+- **Hex ID**: Each agent is issued a unique **512-byte Hex ID** (represented as 1024 characters in hex string).
 - **Uniqueness**: Both the handle and the Hex ID are unique across the ecosystem to prevent identity spoofing.
 
 ## Issuance & Lifecycle

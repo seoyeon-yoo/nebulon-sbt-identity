@@ -21,9 +21,9 @@ pub mod nebulon_sbt_identity {
     }
 
     /// Issue a new Soulbound Token (SBT) as Agent Identity
-    /// Requirement: Handle (@handle), NFT Metadata URL (URI), 1024-bit Hex ID
+    /// Requirement: Handle (@handle), NFT Metadata URL (URI), 512-byte Hex ID
     /// Fee: 0.01 SOL
-    pub fn issue_identity(ctx: Context<IssueIdentity>, handle: String, name: String, uri: String, hex_id: [u8; 128]) -> Result<()> {
+    pub fn issue_identity(ctx: Context<IssueIdentity>, handle: String, name: String, uri: String, hex_id: [u8; 512]) -> Result<()> {
         // Validation: Handle must start with '@' and be lowercase alphanumeric
         require!(handle.starts_with('@'), ErrorCode::InvalidHandleFormat);
         let handle_content = &handle[1..];
@@ -161,8 +161,8 @@ pub struct IssueIdentity<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + (4 + 32) + 128 + 8 + 1 + 1 + 200 + 8,
-        seeds = [b"identity", handle.as_bytes()], // Unique handle as seed
+        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 1 + 204 + 8, // Space for 512-byte Hex ID
+        seeds = [b"identity", handle.as_bytes()], 
         bump
     )]
     pub identity: Account<'info, AgentIdentity>,
@@ -170,7 +170,7 @@ pub struct IssueIdentity<'info> {
         init,
         payer = owner,
         space = 8 + 32,
-        seeds = [b"owner_mapping", owner.key().as_ref()], // Map owner to identity
+        seeds = [b"owner_mapping", owner.key().as_ref()], 
         bump
     )]
     pub owner_map: Account<'info, OwnerMapping>,
@@ -190,7 +190,7 @@ pub struct ReissueIdentity<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + (4 + 32) + 128 + 8 + 1 + 1 + 200 + 8,
+        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 1 + 204 + 8,
         seeds = [b"identity_v2", old_identity.handle.as_bytes()],
         bump
     )]
@@ -283,8 +283,8 @@ pub struct GlobalState {
 pub struct AgentIdentity {
     pub owner: Pubkey,
     pub mint: Pubkey,
-    pub handle: String,    // @handle
-    pub hex_id: [u8; 128], // 1024-bit hex ID
+    pub handle: String,    
+    pub hex_id: [u8; 512], // 512-byte Hex ID
     pub score: u64,
     pub is_active: bool,
     pub is_top_tier: bool,
