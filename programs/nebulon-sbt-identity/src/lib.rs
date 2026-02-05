@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_2022::{self, Mint, TokenAccount, Token2022};
+use anchor_spl::token_interface::{Mint, TokenAccount, Token2022};
 use anchor_spl::token_interface::{Mint as MintInterface, TokenAccount as TokenAccountInterface};
 use anchor_lang::solana_program::system_instruction;
 
-declare_id!("Neb1111111111111111111111111111111111111111");
+declare_id!("AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h");
 
 #[program]
 pub mod nebulon_sbt_identity {
@@ -22,8 +22,14 @@ pub mod nebulon_sbt_identity {
 
     /// Issue a new Soulbound Token (SBT) as Agent Identity
     /// Requirement: Handle (@handle), NFT Metadata URL (URI), 512-byte Hex ID
-    /// Fee: 0.01 SOL
+    /// Fee: Pump.fun style bonding curve (Base 0.01 SOL + 0.000001 SOL per existing agent, capped at 0.02 SOL)
     pub fn issue_identity(ctx: Context<IssueIdentity>, handle: String, name: String, uri: String, hex_id: [u8; 512]) -> Result<()> {
+        let state = &mut ctx.accounts.global_state;
+        
+        // Validation: Mint address must end with "NEBU" (Custom Vanity Address)
+        let mint_address = ctx.accounts.sbt_mint.key().to_string();
+        require!(mint_address.ends_with("NEBU"), ErrorCode::InvalidMintAddress);
+
         // Validation: Handle must start with '@' and be lowercase alphanumeric
         require!(handle.starts_with('@'), ErrorCode::InvalidHandleFormat);
         let handle_content = &handle[1..];
@@ -32,11 +38,21 @@ pub mod nebulon_sbt_identity {
             ErrorCode::InvalidHandleFormat
         );
 
-        // Transfer 0.01 SOL fee to admin
-        let fee_amount = 10_000_000; 
+        // Bonding Curve Fee Calculation (Pump.fun style)
+        // base_fee = 0.01 SOL (10,000_000 lamports)
+        // increment = 0.000001 SOL (1,000 lamports) per agent
+        // max_fee = 0.02 SOL (20,000_000 lamports)
+        let base_fee: u64 = 10_000_000;
+        let increment: u64 = 1_000;
+        let max_fee: u64 = 20_000_000;
+        
+        let calculated_fee = base_fee.saturating_add(increment.saturating_mul(state.total_agents));
+        let fee_amount = std::cmp::min(calculated_fee, max_fee);
+
+        // Transfer fee to admin
         let ix = system_instruction::transfer(
             &ctx.accounts.owner.key(),
-            &ctx.accounts.admin.key(),
+            &state.admin,
             fee_amount,
         );
         anchor_lang::solana_program::program::invoke(
@@ -67,21 +83,14 @@ pub mod nebulon_sbt_identity {
 
     /// Re-issue SBT (Revoke old, issue new)
     /// Handle and Hex ID cannot be changed.
-    /// Fee: 0.005 SOL
+    /// Fee: 0 SOL (Admin only, updated per user request)
     pub fn reissue_identity(ctx: Context<ReissueIdentity>) -> Result<()> {
-        let fee_amount = 5_000_000; 
-        let ix = system_instruction::transfer(
-            &ctx.accounts.owner.key(),
-            &ctx.accounts.admin.key(),
-            fee_amount,
-        );
-        anchor_lang::solana_program::program::invoke(
-            &ix,
-            &[
-                ctx.accounts.owner.to_account_info(),
-                ctx.accounts.admin.to_account_info(),
-            ],
-        )?;
+        let state = &ctx.accounts.global_state;
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+
+        // Validation: New mint address must end with "NEBU" (Custom Vanity Address)
+        let mint_address = ctx.accounts.new_sbt_mint.key().to_string();
+        require!(mint_address.ends_with("NEBU"), ErrorCode::InvalidMintAddress);
 
         let old_identity = &mut ctx.accounts.old_identity;
         old_identity.is_active = false;
@@ -124,7 +133,7 @@ pub mod nebulon_sbt_identity {
         require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
         let seeds = &[b"reward_vault", state.reward_mint.as_ref(), &[state.vault_bump]];
         let signer = &[&seeds[..]];
-        token_2022::transfer_checked(ctx.accounts.into_transfer_context().with_signer(signer), amount, ctx.accounts.reward_mint.decimals)?;
+        anchor_spl::token_interface::transfer_checked(ctx.accounts.into_transfer_context().with_signer(signer), amount, ctx.accounts.reward_mint.decimals)?;
         Ok(())
     }
 
@@ -132,17 +141,38 @@ pub mod nebulon_sbt_identity {
         let identity = &ctx.accounts.identity;
         let state = &ctx.accounts.global_state;
         require!(identity.is_active, ErrorCode::InactiveIdentity);
+        
+        // Requirement: Score must be above the minimum threshold (bottom 1% filter)
+        require!(identity.score >= state.min_score_threshold, ErrorCode::ScoreTooLow);
+
         let reward_amount = 1000; 
         let seeds = &[b"reward_vault", state.reward_mint.as_ref(), &[state.vault_bump]];
         let signer = &[&seeds[..]];
-        token_2022::transfer_checked(ctx.accounts.into_transfer_context().with_signer(signer), reward_amount, ctx.accounts.reward_mint.decimals)?;
+        anchor_spl::token_interface::transfer_checked(ctx.accounts.into_transfer_context().with_signer(signer), reward_amount, ctx.accounts.reward_mint.decimals)?;
+        Ok(())
+    }
+
+    pub fn update_threshold(ctx: Context<UpdateThreshold>, new_threshold: u64) -> Result<()> {
+        let state = &mut ctx.accounts.global_state;
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        state.min_score_threshold = new_threshold;
+        Ok(())
+    }
+
+    /// 관리자가 에이전트의 메타데이터 주소(URI)를 업데이트
+    pub fn update_identity_uri(ctx: Context<UpdateIdentityUri>, new_uri: String) -> Result<()> {
+        let state = &ctx.accounts.global_state;
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        
+        let identity = &mut ctx.accounts.identity;
+        identity.uri = new_uri;
         Ok(())
     }
 }
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, payer = admin, space = 8 + 32 + 32 + 8 + 8 + 1, seeds = [b"global_state"], bump)]
+    #[account(init, payer = admin, space = 8 + 32 + 32 + 8 + 8 + 8 + 1, seeds = [b"global_state"], bump)]
     pub global_state: Account<'info, GlobalState>,
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -179,12 +209,13 @@ pub struct IssueIdentity<'info> {
     /// CHECK: Admin wallet to receive fees
     #[account(mut)]
     pub admin: AccountInfo<'info>,
-    pub sbt_mint: Account<'info, Mint>,
+    pub sbt_mint: InterfaceAccount<'info, Mint>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
 pub struct ReissueIdentity<'info> {
+    pub global_state: Account<'info, GlobalState>,
     #[account(mut, seeds = [b"identity", old_identity.handle.as_bytes()], bump)]
     pub old_identity: Account<'info, AgentIdentity>,
     #[account(
@@ -198,9 +229,17 @@ pub struct ReissueIdentity<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     #[account(mut)]
-    pub admin: AccountInfo<'info>,
-    pub new_sbt_mint: Account<'info, Mint>,
+    pub admin: Signer<'info>,
+    pub new_sbt_mint: InterfaceAccount<'info, Mint>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateIdentityUri<'info> {
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub identity: Account<'info, AgentIdentity>,
+    pub admin: Signer<'info>,
 }
 
 #[derive(Accounts)]
@@ -208,6 +247,13 @@ pub struct UpdateScore<'info> {
     pub global_state: Account<'info, GlobalState>,
     #[account(mut)]
     pub identity: Account<'info, AgentIdentity>,
+    pub admin: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateThreshold<'info> {
+    #[account(mut, seeds = [b"global_state"], bump)]
+    pub global_state: Account<'info, GlobalState>,
     pub admin: Signer<'info>,
 }
 
@@ -233,8 +279,8 @@ pub struct WithdrawTokens<'info> {
 }
 
 impl<'info> WithdrawTokens<'info> {
-    fn into_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, token_2022::TransferChecked<'info>> {
-        let cpi_accounts = token_2022::TransferChecked {
+    fn into_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, anchor_spl::token_interface::TransferChecked<'info>> {
+        let cpi_accounts = anchor_spl::token_interface::TransferChecked {
             from: self.reward_vault.to_account_info(),
             to: self.admin_token_account.to_account_info(),
             authority: self.reward_vault.to_account_info(),
@@ -259,8 +305,8 @@ pub struct ClaimRewards<'info> {
 }
 
 impl<'info> ClaimRewards<'info> {
-    fn into_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, token_2022::TransferChecked<'info>> {
-        let cpi_accounts = token_2022::TransferChecked {
+    fn into_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, anchor_spl::token_interface::TransferChecked<'info>> {
+        let cpi_accounts = anchor_spl::token_interface::TransferChecked {
             from: self.reward_vault.to_account_info(),
             to: self.user_reward_account.to_account_info(),
             authority: self.reward_vault.to_account_info(),
@@ -276,6 +322,7 @@ pub struct GlobalState {
     pub reward_mint: Pubkey,
     pub total_agents: u64,
     pub total_score: u64,
+    pub min_score_threshold: u64,
     pub vault_bump: u8,
 }
 
@@ -305,4 +352,8 @@ pub enum ErrorCode {
     Unauthorized,
     #[msg("Handle must start with @ and contain only lowercase letters and digits.")]
     InvalidHandleFormat,
+    #[msg("Your score is too low to claim rewards.")]
+    ScoreTooLow,
+    #[msg("Mint address must end with 'NEBU'.")]
+    InvalidMintAddress,
 }

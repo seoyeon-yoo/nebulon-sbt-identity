@@ -1,0 +1,1 @@
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/sbf-solana-solana/release/libnebulon_sbt_identity.rlib: /home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/programs/nebulon-sbt-identity/src/lib.rs

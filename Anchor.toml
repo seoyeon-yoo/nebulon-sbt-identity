@@ -1,18 +1,20 @@
 [toolchain]
 package_manager = "yarn"
+anchor_version = "0.31.0"
+solana_version = "1.18.26"
 
 [features]
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-nebulon_temp = "Hsb6bsCkWVg6nMh9MjxvyCWaEm14kEW7yRPEqgTttQhz"
+[programs.devnet]
+nebulon_sbt_identity = "AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
