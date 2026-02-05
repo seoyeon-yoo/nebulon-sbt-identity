@@ -21,11 +21,19 @@ pub mod nebulon_sbt_identity {
     }
 
     /// Issue a new Soulbound Token (SBT) as Agent Identity
-    /// Requirement: NFT Metadata URL (URI)
+    /// Requirement: Handle (@handle), NFT Metadata URL (URI), 1024-bit Hex ID
     /// Fee: 0.01 SOL
-    pub fn issue_identity(ctx: Context<IssueIdentity>, name: String, uri: String) -> Result<()> {
+    pub fn issue_identity(ctx: Context<IssueIdentity>, handle: String, name: String, uri: String, hex_id: [u8; 128]) -> Result<()> {
+        // Validation: Handle must start with '@' and be lowercase alphanumeric
+        require!(handle.starts_with('@'), ErrorCode::InvalidHandleFormat);
+        let handle_content = &handle[1..];
+        require!(
+            handle_content.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()),
+            ErrorCode::InvalidHandleFormat
+        );
+
         // Transfer 0.01 SOL fee to admin
-        let fee_amount = 10_000_000; // 0.01 SOL in lamports
+        let fee_amount = 10_000_000; 
         let ix = system_instruction::transfer(
             &ctx.accounts.owner.key(),
             &ctx.accounts.admin.key(),
@@ -42,6 +50,8 @@ pub mod nebulon_sbt_identity {
         let identity = &mut ctx.accounts.identity;
         identity.owner = ctx.accounts.owner.key();
         identity.mint = ctx.accounts.sbt_mint.key();
+        identity.handle = handle;
+        identity.hex_id = hex_id;
         identity.score = 0;
         identity.is_active = true;
         identity.is_top_tier = false;
@@ -51,14 +61,14 @@ pub mod nebulon_sbt_identity {
         let state = &mut ctx.accounts.global_state;
         state.total_agents += 1;
 
-        msg!("Identity issued for agent: {}", name);
+        msg!("Identity issued for agent: {} with handle {}", name, identity.handle);
         Ok(())
     }
 
     /// Re-issue SBT (Revoke old, issue new)
+    /// Handle and Hex ID cannot be changed.
     /// Fee: 0.005 SOL
     pub fn reissue_identity(ctx: Context<ReissueIdentity>) -> Result<()> {
-        // Transfer 0.005 SOL fee
         let fee_amount = 5_000_000; 
         let ix = system_instruction::transfer(
             &ctx.accounts.owner.key(),
@@ -73,136 +83,97 @@ pub mod nebulon_sbt_identity {
             ],
         )?;
 
-        // Deactivate old identity
         let old_identity = &mut ctx.accounts.old_identity;
         old_identity.is_active = false;
 
-        // Initialize new identity
         let new_identity = &mut ctx.accounts.new_identity;
         new_identity.owner = ctx.accounts.owner.key();
         new_identity.mint = ctx.accounts.new_sbt_mint.key();
-        new_identity.score = old_identity.score; // Carry over score
+        new_identity.handle = old_identity.handle.clone(); // Handle is immutable
+        new_identity.hex_id = old_identity.hex_id;         // Hex ID is immutable
+        new_identity.score = old_identity.score;
         new_identity.is_active = true;
         new_identity.is_top_tier = old_identity.is_top_tier;
-        new_identity.uri = old_identity.uri.clone(); // Carry over URI
+        new_identity.uri = old_identity.uri.clone();
         new_identity.last_claim_ts = Clock::get()?.unix_timestamp;
 
         Ok(())
     }
 
-    /// Update agent score and tier (Admin only)
     pub fn update_score(ctx: Context<UpdateScore>, new_score: u64, is_top_tier: bool) -> Result<()> {
         let identity = &mut ctx.accounts.identity;
         let state = &mut ctx.accounts.global_state;
-
-        // Ensure only admin can update score
         require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
 
-        // Update global total score
         state.total_score = state.total_score.saturating_sub(identity.score).saturating_add(new_score);
-        
         identity.score = new_score;
         identity.is_top_tier = is_top_tier;
-
         Ok(())
     }
 
-    /// Withdraw SOL from program state (Admin only)
     pub fn withdraw_sol(ctx: Context<WithdrawAdmin>, amount: u64) -> Result<()> {
         let state = &ctx.accounts.global_state;
         require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
-
         **ctx.accounts.global_state.to_account_info().try_borrow_mut_lamports()? -= amount;
         **ctx.accounts.admin.to_account_info().try_borrow_mut_lamports()? += amount;
         Ok(())
     }
 
-    /// Withdraw Nebula (Reward Tokens) from vault (Admin only)
     pub fn withdraw_tokens(ctx: Context<WithdrawTokens>, amount: u64) -> Result<()> {
         let state = &ctx.accounts.global_state;
         require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
-
-        let seeds = &[
-            b"reward_vault",
-            state.reward_mint.as_ref(),
-            &[state.vault_bump],
-        ];
+        let seeds = &[b"reward_vault", state.reward_mint.as_ref(), &[state.vault_bump]];
         let signer = &[&seeds[..]];
-
-        token_2022::transfer_checked(
-            ctx.accounts.into_transfer_context().with_signer(signer),
-            amount,
-            ctx.accounts.reward_mint.decimals,
-        )?;
-
+        token_2022::transfer_checked(ctx.accounts.into_transfer_context().with_signer(signer), amount, ctx.accounts.reward_mint.decimals)?;
         Ok(())
     }
 
-    /// Distribute rewards from yield pool
     pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         let identity = &ctx.accounts.identity;
         let state = &ctx.accounts.global_state;
-        
         require!(identity.is_active, ErrorCode::InactiveIdentity);
-
-        // Simplified logic: distribute a portion of the vault
         let reward_amount = 1000; 
-
-        let seeds = &[
-            b"reward_vault",
-            state.reward_mint.as_ref(),
-            &[state.vault_bump],
-        ];
+        let seeds = &[b"reward_vault", state.reward_mint.as_ref(), &[state.vault_bump]];
         let signer = &[&seeds[..]];
-
-        token_2022::transfer_checked(
-            ctx.accounts.into_transfer_context().with_signer(signer),
-            reward_amount,
-            ctx.accounts.reward_mint.decimals,
-        )?;
-
+        token_2022::transfer_checked(ctx.accounts.into_transfer_context().with_signer(signer), reward_amount, ctx.accounts.reward_mint.decimals)?;
         Ok(())
     }
 }
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(
-        init,
-        payer = admin,
-        space = 8 + 32 + 32 + 8 + 8 + 1,
-        seeds = [b"global_state"],
-        bump
-    )]
+    #[account(init, payer = admin, space = 8 + 32 + 32 + 8 + 8 + 1, seeds = [b"global_state"], bump)]
     pub global_state: Account<'info, GlobalState>,
     #[account(mut)]
     pub admin: Signer<'info>,
     pub reward_mint: InterfaceAccount<'info, MintInterface>,
-    #[account(
-        init,
-        payer = admin,
-        token::mint = reward_mint,
-        token::authority = reward_vault,
-        seeds = [b"reward_vault", reward_mint.key().as_ref()],
-        bump,
-    )]
+    #[account(init, payer = admin, token::mint = reward_mint, token::authority = reward_vault, seeds = [b"reward_vault", reward_mint.key().as_ref()], bump)]
     pub reward_vault: InterfaceAccount<'info, TokenAccountInterface>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token2022>,
 }
 
 #[derive(Accounts)]
+#[instruction(handle: String)]
 pub struct IssueIdentity<'info> {
     #[account(mut)]
     pub global_state: Account<'info, GlobalState>,
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + 8 + 1 + 1 + 200 + 8, // Extended space for URI
-        seeds = [b"identity", owner.key().as_ref()],
+        space = 8 + 32 + 32 + (4 + 32) + 128 + 8 + 1 + 1 + 200 + 8,
+        seeds = [b"identity", handle.as_bytes()], // Unique handle as seed
         bump
     )]
     pub identity: Account<'info, AgentIdentity>,
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + 32,
+        seeds = [b"owner_mapping", owner.key().as_ref()], // Map owner to identity
+        bump
+    )]
+    pub owner_map: Account<'info, OwnerMapping>,
     #[account(mut)]
     pub owner: Signer<'info>,
     /// CHECK: Admin wallet to receive fees
@@ -214,13 +185,13 @@ pub struct IssueIdentity<'info> {
 
 #[derive(Accounts)]
 pub struct ReissueIdentity<'info> {
-    #[account(mut, seeds = [b"identity", owner.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"identity", old_identity.handle.as_bytes()], bump)]
     pub old_identity: Account<'info, AgentIdentity>,
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + 8 + 1 + 1 + 200 + 8,
-        seeds = [b"identity_v2", owner.key().as_ref()],
+        space = 8 + 32 + 32 + (4 + 32) + 128 + 8 + 1 + 1 + 200 + 8,
+        seeds = [b"identity_v2", old_identity.handle.as_bytes()],
         bump
     )]
     pub new_identity: Account<'info, AgentIdentity>,
@@ -312,11 +283,18 @@ pub struct GlobalState {
 pub struct AgentIdentity {
     pub owner: Pubkey,
     pub mint: Pubkey,
+    pub handle: String,    // @handle
+    pub hex_id: [u8; 128], // 1024-bit hex ID
     pub score: u64,
     pub is_active: bool,
     pub is_top_tier: bool,
     pub uri: String,
     pub last_claim_ts: i64,
+}
+
+#[account]
+pub struct OwnerMapping {
+    pub identity: Pubkey,
 }
 
 #[error_code]
@@ -325,4 +303,6 @@ pub enum ErrorCode {
     InactiveIdentity,
     #[msg("You are not authorized to perform this action.")]
     Unauthorized,
+    #[msg("Handle must start with @ and contain only lowercase letters and digits.")]
+    InvalidHandleFormat,
 }
