@@ -66,7 +66,7 @@ pub mod nebulon_sbt_identity {
         identity.sns = BTreeMap::new();
         identity.public_data = String::new();
         identity.private_vault = Vec::new();
-        identity.tier = 10; // Default to Deadzone
+        identity.tier = 10; 
 
         state.total_agents += 1;
 
@@ -74,7 +74,8 @@ pub mod nebulon_sbt_identity {
         Ok(())
     }
 
-    pub fn update_agent_status(ctx: Context<UpdateAgentStatus>, new_score: u64, tier: u8) -> Result<()> {
+    /// Update Agent Score, Tier, and Metadata URI (Dynamic NFT Identity)
+    pub fn update_agent_status(ctx: Context<UpdateAgentStatus>, new_score: u64, tier: u8, new_uri: String) -> Result<()> {
         let identity = &mut ctx.accounts.identity;
         let state = &mut ctx.accounts.global_state;
         require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
@@ -83,6 +84,9 @@ pub mod nebulon_sbt_identity {
         state.total_score = state.total_score.saturating_sub(identity.score).saturating_add(new_score);
         identity.score = new_score;
         identity.tier = tier;
+        identity.uri = new_uri; // Dynamic URI update based on tier
+        
+        msg!("Status updated for {}: Score {}, Tier {}, URI {}", identity.handle, new_score, tier, identity.uri);
         Ok(())
     }
 
@@ -101,7 +105,6 @@ pub mod nebulon_sbt_identity {
 
     pub fn update_public_data(ctx: Context<UpdateAgentData>, new_data: String) -> Result<()> {
         let identity = &mut ctx.accounts.identity;
-        // 100% Autonomous: Agent wallet manages its own public field
         require_keys_eq!(ctx.accounts.owner.key(), identity.owner, ErrorCode::Unauthorized);
         identity.public_data = new_data;
         Ok(())
@@ -109,7 +112,6 @@ pub mod nebulon_sbt_identity {
 
     pub fn update_private_vault(ctx: Context<UpdateAgentData>, encrypted_data: Vec<u8>) -> Result<()> {
         let identity = &mut ctx.accounts.identity;
-        // 100% Autonomous: Agent wallet manages its own private vault
         require_keys_eq!(ctx.accounts.owner.key(), identity.owner, ErrorCode::Unauthorized);
         identity.private_vault = encrypted_data;
         Ok(())
@@ -119,12 +121,8 @@ pub mod nebulon_sbt_identity {
         let identity = &ctx.accounts.identity;
         let state = &ctx.accounts.global_state;
         require!(identity.is_active, ErrorCode::InactiveIdentity);
-        
-        // Tier 10 (Deadzone) gets 0 rewards
         require!(identity.tier < 10, ErrorCode::TierNotEligible);
 
-        // Logic for reward calculation based on tier share would happen here or via off-chain oracle disbursement
-        // For simulation, we allow a fixed claim if eligible
         let reward_amount = 1000; 
         
         let seeds = &[b"reward_vault", state.reward_mint.as_ref(), &[state.vault_bump]];
@@ -241,7 +239,7 @@ pub struct AgentIdentity {
     pub sns: BTreeMap<String, String>,
     pub public_data: String,
     pub private_vault: Vec<u8>,
-    pub tier: u8, // 1-10
+    pub tier: u8, 
 }
 
 #[error_code]

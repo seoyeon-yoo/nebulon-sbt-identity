@@ -13,10 +13,24 @@ app = FastAPI(title="Nebulon SBT Identity Backend")
 # Simulation of on-chain state
 PROGRAM_ID = "AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h"
 
+# Tier to Metadata URI Mapping (IPFS)
+TIER_METADATA_MAP = {
+    1: "https://ipfs.io/ipfs/QmYY1Dx83eZZFK5jYHfmoG8bCcZzJV5tndFxBkqR1qtTBS",
+    2: "https://ipfs.io/ipfs/QmWnEPKLpACtaQzR99PSBReMgGTz4aSg2aYfcycLAWbaoE",
+    3: "https://ipfs.io/ipfs/QmeUJ5APWUUZ9LP5195fg8onmTp9h4paSuF2WVtZhNxQJg",
+    4: "https://ipfs.io/ipfs/QmZR9kEMwKPCZ5tiDBEfGmy1ow2DqQv7o3JmXc7WLKn8pQ",
+    5: "https://ipfs.io/ipfs/QmSqnQEfpuroog6VmLrx1byFGjGQdhR6z1pQVzRjAK2Bdx",
+    6: "https://ipfs.io/ipfs/QmYr4SpuTR8N3meZC3UpJkpK1yM2ZxxSG62rZYjGqSsYdg",
+    7: "https://ipfs.io/ipfs/QmeR1xvuMBdNXiQpLhyWwZSAi2jss9V5EqPjdJeU2h55vm",
+    8: "https://ipfs.io/ipfs/QmbRRi252mYmpTpBLvWGhAP9Z93CEXXhzfFMLm29jyix7S",
+    9: "https://ipfs.io/ipfs/QmfEiQSGBY447aSU1panm9EbuSufaJ2GQ6nmRUDuobMPLG",
+    10: "https://ipfs.io/ipfs/QmVdjCRYhQSo8MQzAviNqotPu5PA7EXt75JQRcfgKZSSHT",
+}
+
 class VerifyPostRequest(BaseModel):
     handle: str
     post_url: str
-    account_type: str  # "moltbook" or "moltx"
+    account_type: str 
 
 TIERS = {
     1: {"name": "Nebula Prime", "score_top": 5, "reward_share": 30.0},
@@ -69,10 +83,6 @@ async def verify_linking(request: VerifyPostRequest):
 
 @app.post("/calculate-tiers")
 async def calculate_tiers(agent_scores: Dict[str, int]):
-    """
-    Calculates tiers for a list of agents based on their scores.
-    Input: {"@handle": score, ...}
-    """
     if not agent_scores:
         return {}
 
@@ -89,13 +99,20 @@ async def calculate_tiers(agent_scores: Dict[str, int]):
                 assigned_tier = tier_id
                 break
         
+        # New Feature: Link Metadata URI to Tier
+        metadata_uri = TIER_METADATA_MAP[assigned_tier]
+        
+        print(f"TRIGGER: Updating Agent {handle} to Tier {assigned_tier} with URI {metadata_uri}")
+        # Logic to call Anchor program: update_agent_status(score, assigned_tier, metadata_uri)
+        
         results[handle] = {
             "score": score,
             "rank": i + 1,
             "percentile": rank_percentile,
             "tier_id": assigned_tier,
             "tier_name": TIERS[assigned_tier]["name"],
-            "reward_share": TIERS[assigned_tier]["reward_share"]
+            "reward_share": TIERS[assigned_tier]["reward_share"],
+            "metadata_uri": metadata_uri
         }
         
     return results
