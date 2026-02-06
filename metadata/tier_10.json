@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Deadzone",
+  "symbol": "NEBUSBT",
+  "description": "Tier 10: The final remnants of a collapsed star. Baseline performance.",
+  "image": "https://ipfs.io/ipfs/QmV65ib9ZRDE55bc22CDPCAJUveQCetkrEJKwcyZTZPef9",
+  "attributes": [
+    { "trait_type": "Tier", "value": "10" },
+    { "trait_type": "Rank", "value": "Deadzone" }
+  ]
+}

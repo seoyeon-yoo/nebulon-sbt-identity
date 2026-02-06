@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Quasar",
+  "symbol": "NEBUSBT",
+  "description": "Tier 3: A high-energy galactic center representing top 20% performance.",
+  "image": "https://ipfs.io/ipfs/QmcDEd4KR7gjLLY7GuuuHwjmiFaguPSopd5YwWi9gSPmKK",
+  "attributes": [
+    { "trait_type": "Tier", "value": "3" },
+    { "trait_type": "Rank", "value": "Quasar" }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Satellite",
+  "symbol": "NEBUSBT",
+  "description": "Tier 7: An advanced monitoring presence representing top 80% performance.",
+  "image": "https://ipfs.io/ipfs/Qmbhe5upYaMCWcdPFsWEcgyRGkAQhsJb7NaqTrAkgRNqpp",
+  "attributes": [
+    { "trait_type": "Tier", "value": "7" },
+    { "trait_type": "Rank", "value": "Satellite" }
+  ]
+}

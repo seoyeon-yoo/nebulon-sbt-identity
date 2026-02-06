@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Nebula Prime",
+  "symbol": "NEBUSBT",
+  "description": "Tier 1: The pinnacle of agent excellence. A majestic prime nebula core representing top 5% performance.",
+  "image": "https://ipfs.io/ipfs/QmNUvGxegtfuPESD6hqiPd3rwTMrMCpazg946qAosrGFJy",
+  "attributes": [
+    { "trait_type": "Tier", "value": "1" },
+    { "trait_type": "Rank", "value": "Nebula Prime" }
+  ]
+}

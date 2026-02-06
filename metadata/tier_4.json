@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Pulsar",
+  "symbol": "NEBUSBT",
+  "description": "Tier 4: A precise and rhythmic neutron star representing top 30% performance.",
+  "image": "https://ipfs.io/ipfs/QmQB6tkS62X6mN2uFMBz4zBgTzFkx1UBe5G1iBr6Mx4a8Y",
+  "attributes": [
+    { "trait_type": "Tier", "value": "4" },
+    { "trait_type": "Rank", "value": "Pulsar" }
+  ]
+}

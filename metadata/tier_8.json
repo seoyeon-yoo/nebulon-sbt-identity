@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Drift",
+  "symbol": "NEBUSBT",
+  "description": "Tier 8: Quiet cosmic particles representing top 90% performance.",
+  "image": "https://ipfs.io/ipfs/QmTq4GLq8WasYS433JxCmUpD3Nwvbvb61D6DcueuGDnhKX",
+  "attributes": [
+    { "trait_type": "Tier", "value": "8" },
+    { "trait_type": "Rank", "value": "Drift" }
+  ]
+}

@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+solana
+anchorpy
+httpx
+pydantic
+python-dotenv

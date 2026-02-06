@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Orbit",
+  "symbol": "NEBUSBT",
+  "description": "Tier 6: Harmonious gravitational paths representing top 60% performance.",
+  "image": "https://ipfs.io/ipfs/QmcUR4xW56bWapvwxPbGeivdZ9WUErqcYMwReyE1n1YvYz",
+  "attributes": [
+    { "trait_type": "Tier", "value": "6" },
+    { "trait_type": "Rank", "value": "Orbit" }
+  ]
+}

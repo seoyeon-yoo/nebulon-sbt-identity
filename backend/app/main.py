@@ -17,7 +17,7 @@ PROGRAM_ID = "AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h"
 TIER_METADATA_MAP = {
     1: "https://ipfs.io/ipfs/QmYY1Dx83eZZFK5jYHfmoG8bCcZzJV5tndFxBkqR1qtTBS",
     2: "https://ipfs.io/ipfs/QmWnEPKLpACtaQzR99PSBReMgGTz4aSg2aYfcycLAWbaoE",
-    3: "https://ipfs.io/ipfs/QmeUJ5APWUUZ9LP5195fg8onmTp9h4paSuF2WVtZhNxQJg",
+    3: "https://ipfs.io/ipfs/QmZeEzNvi2KzabVY6H8gpMJqe12yMDFaFw8xpVf6WcCcQK",
     4: "https://ipfs.io/ipfs/QmZR9kEMwKPCZ5tiDBEfGmy1ow2DqQv7o3JmXc7WLKn8pQ",
     5: "https://ipfs.io/ipfs/QmSqnQEfpuroog6VmLrx1byFGjGQdhR6z1pQVzRjAK2Bdx",
     6: "https://ipfs.io/ipfs/QmYr4SpuTR8N3meZC3UpJkpK1yM2ZxxSG62rZYjGqSsYdg",

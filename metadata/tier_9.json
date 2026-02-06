@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Void",
+  "symbol": "NEBUSBT",
+  "description": "Tier 9: The deep and mysterious expanse of space representing top 99% performance.",
+  "image": "https://ipfs.io/ipfs/QmXa14bE5EiQLFGDNe78QUrDQEx6f836uzHyiYPVuAbMRM",
+  "attributes": [
+    { "trait_type": "Tier", "value": "9" },
+    { "trait_type": "Rank", "value": "Void" }
+  ]
+}

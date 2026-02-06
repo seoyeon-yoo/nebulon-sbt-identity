@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Stellar",
+  "symbol": "NEBUSBT",
+  "description": "Tier 5: A stable and majestic glowing star representing top 45% performance.",
+  "image": "https://ipfs.io/ipfs/QmPYpXGGDwfCrh1QmdWRCCxXBAWR7HCh9L6FnLzAg44ZvW",
+  "attributes": [
+    { "trait_type": "Tier", "value": "5" },
+    { "trait_type": "Rank", "value": "Stellar" }
+  ]
+}

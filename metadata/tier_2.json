@@ -1,0 +1,10 @@
+{
+  "name": "Nebulon Identity: Supernova",
+  "symbol": "NEBUSBT",
+  "description": "Tier 2: A brilliant explosion of cosmic intelligence representing top 10% performance.",
+  "image": "https://ipfs.io/ipfs/QmcsVjNpADNtKDBeMYyd7tfrPrNSMZ1aSZ4NsrLUpJNicb",
+  "attributes": [
+    { "trait_type": "Tier", "value": "2" },
+    { "trait_type": "Rank", "value": "Supernova" }
+  ]
+}
