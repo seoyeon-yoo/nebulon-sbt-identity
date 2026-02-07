@@ -1,0 +1,9 @@
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/debug/deps/spl_transfer_hook_interface-ce7843280827131c.d: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/error.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/instruction.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/offchain.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/onchain.rs
+
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/debug/deps/libspl_transfer_hook_interface-ce7843280827131c.rmeta: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/error.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/instruction.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/offchain.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/onchain.rs
+
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/lib.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/error.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/instruction.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/offchain.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-transfer-hook-interface-0.6.5/src/onchain.rs:

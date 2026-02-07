@@ -1,0 +1,11 @@
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/debug/deps/ed25519_dalek-5a1ecf6bd74d3ca4.d: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/constants.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/keypair.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/errors.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/public.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/secret.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/signature.rs
+
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/debug/deps/libed25519_dalek-5a1ecf6bd74d3ca4.rmeta: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/constants.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/keypair.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/errors.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/public.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/secret.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/signature.rs
+
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/lib.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/constants.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/keypair.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/errors.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/public.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/secret.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ed25519-dalek-1.0.1/src/signature.rs:

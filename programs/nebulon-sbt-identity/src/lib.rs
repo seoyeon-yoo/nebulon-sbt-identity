@@ -17,13 +17,12 @@ pub mod nebulon_sbt_identity {
         state.total_agents = 0;
         state.total_score = 0;
         state.vault_bump = ctx.bumps.reward_vault;
+        state.state_bump = ctx.bumps.global_state;
         state.reward_pool = 0;
         Ok(())
     }
 
     pub fn issue_identity(ctx: Context<IssueIdentity>, handle: String, name: String, uri: String, hex_id: [u8; 512]) -> Result<()> {
-        let state = &mut ctx.accounts.global_state;
-        
         let mint_address = ctx.accounts.sbt_mint.key().to_string();
         require!(mint_address.ends_with("NEBU"), ErrorCode::InvalidMintAddress);
 
@@ -38,26 +37,34 @@ pub mod nebulon_sbt_identity {
         let increment: u64 = 1_000;
         let max_fee: u64 = 20_000_000;
         
-        let calculated_fee = base_fee.saturating_add(increment.saturating_mul(state.total_agents));
+        // Read total_agents before mutable borrow
+        let total_agents = ctx.accounts.global_state.total_agents;
+        let calculated_fee = base_fee.saturating_add(increment.saturating_mul(total_agents));
         let fee_amount = std::cmp::min(calculated_fee, max_fee);
 
+        // Get keys before any mutable borrows
+        let owner_key = ctx.accounts.owner.key();
+        let global_state_key = ctx.accounts.global_state.key();
+
+        // Transfer SOL to global_state PDA instead of admin directly
         let ix = system_instruction::transfer(
-            &ctx.accounts.owner.key(),
-            &state.admin,
+            &owner_key,
+            &global_state_key,
             fee_amount,
         );
         anchor_lang::solana_program::program::invoke(
             &ix,
             &[
                 ctx.accounts.owner.to_account_info(),
-                ctx.accounts.admin.to_account_info(),
+                ctx.accounts.global_state.to_account_info(),
             ],
         )?;
 
+        // Now do mutable borrows
         let identity = &mut ctx.accounts.identity;
-        identity.owner = ctx.accounts.owner.key();
+        identity.owner = owner_key;
         identity.mint = ctx.accounts.sbt_mint.key();
-        identity.handle = handle;
+        identity.handle = handle.clone();
         identity.hex_id = hex_id;
         identity.score = 0;
         identity.is_active = true;
@@ -68,9 +75,10 @@ pub mod nebulon_sbt_identity {
         identity.private_vault = Vec::new();
         identity.tier = 10; 
 
+        let state = &mut ctx.accounts.global_state;
         state.total_agents += 1;
 
-        msg!("Identity issued for agent: {} with handle {}", name, identity.handle);
+        msg!("Identity issued for agent: {} with handle {}", name, handle);
         Ok(())
     }
 
@@ -130,11 +138,59 @@ pub mod nebulon_sbt_identity {
         anchor_spl::token_interface::transfer_checked(ctx.accounts.into_transfer_context().with_signer(signer), reward_amount, ctx.accounts.reward_mint.decimals)?;
         Ok(())
     }
+
+    /// Admin withdraws SOL from the global_state PDA
+    pub fn admin_withdraw_sol(ctx: Context<AdminWithdrawSol>, amount: u64) -> Result<()> {
+        let state = &ctx.accounts.global_state;
+        
+        // Verify admin authorization
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        
+        // Check sufficient balance (account for rent-exempt minimum)
+        let global_state_info = ctx.accounts.global_state.to_account_info();
+        let rent = Rent::get()?;
+        let min_balance = rent.minimum_balance(global_state_info.data_len());
+        let available_balance = global_state_info.lamports().saturating_sub(min_balance);
+        
+        require!(amount <= available_balance, ErrorCode::InsufficientBalance);
+        
+        // Transfer SOL from global_state PDA to admin
+        **global_state_info.try_borrow_mut_lamports()? -= amount;
+        **ctx.accounts.admin.to_account_info().try_borrow_mut_lamports()? += amount;
+        
+        msg!("Admin withdrew {} lamports from global_state", amount);
+        Ok(())
+    }
+
+    /// Admin withdraws reward tokens (NEBU) from the reward_vault
+    pub fn admin_withdraw_rewards(ctx: Context<AdminWithdrawRewards>, amount: u64) -> Result<()> {
+        let state = &ctx.accounts.global_state;
+        
+        // Verify admin authorization
+        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        
+        // Check sufficient token balance
+        require!(ctx.accounts.reward_vault.amount >= amount, ErrorCode::InsufficientTokenBalance);
+        
+        // Transfer tokens from reward_vault to admin's token account
+        let reward_mint_key = state.reward_mint;
+        let seeds = &[b"reward_vault", reward_mint_key.as_ref(), &[state.vault_bump]];
+        let signer = &[&seeds[..]];
+        
+        anchor_spl::token_interface::transfer_checked(
+            ctx.accounts.into_transfer_context().with_signer(signer),
+            amount,
+            ctx.accounts.reward_mint.decimals,
+        )?;
+        
+        msg!("Admin withdrew {} reward tokens from vault", amount);
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, payer = admin, space = 8 + 32 + 32 + 8 + 8 + 8 + 1, seeds = [b"global_state"], bump)]
+    #[account(init, payer = admin, space = 8 + 32 + 32 + 8 + 8 + 8 + 1 + 1, seeds = [b"global_state"], bump)]
     pub global_state: Account<'info, GlobalState>,
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -148,7 +204,7 @@ pub struct Initialize<'info> {
 #[derive(Accounts)]
 #[instruction(handle: String)]
 pub struct IssueIdentity<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [b"global_state"], bump = global_state.state_bump)]
     pub global_state: Account<'info, GlobalState>,
     #[account(
         init,
@@ -160,9 +216,6 @@ pub struct IssueIdentity<'info> {
     pub identity: Account<'info, AgentIdentity>,
     #[account(mut)]
     pub owner: Signer<'info>,
-    /// CHECK: Admin wallet
-    #[account(mut)]
-    pub admin: AccountInfo<'info>,
     pub sbt_mint: InterfaceAccount<'info, Mint>,
     pub system_program: Program<'info, System>,
 }
@@ -216,6 +269,47 @@ impl<'info> ClaimRewards<'info> {
     }
 }
 
+/// Context for admin to withdraw SOL from global_state PDA
+#[derive(Accounts)]
+pub struct AdminWithdrawSol<'info> {
+    #[account(mut, seeds = [b"global_state"], bump = global_state.state_bump)]
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+/// Context for admin to withdraw reward tokens from reward_vault
+#[derive(Accounts)]
+pub struct AdminWithdrawRewards<'info> {
+    #[account(seeds = [b"global_state"], bump = global_state.state_bump)]
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"reward_vault", reward_mint.key().as_ref()],
+        bump = global_state.vault_bump
+    )]
+    pub reward_vault: InterfaceAccount<'info, TokenAccountInterface>,
+    #[account(mut)]
+    pub admin_token_account: InterfaceAccount<'info, TokenAccountInterface>,
+    pub reward_mint: InterfaceAccount<'info, MintInterface>,
+    pub token_program: Program<'info, Token2022>,
+}
+
+impl<'info> AdminWithdrawRewards<'info> {
+    fn into_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, anchor_spl::token_interface::TransferChecked<'info>> {
+        let cpi_accounts = anchor_spl::token_interface::TransferChecked {
+            from: self.reward_vault.to_account_info(),
+            to: self.admin_token_account.to_account_info(),
+            authority: self.reward_vault.to_account_info(),
+            mint: self.reward_mint.to_account_info(),
+        };
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
+    }
+}
+
 #[account]
 pub struct GlobalState {
     pub admin: Pubkey,
@@ -224,6 +318,7 @@ pub struct GlobalState {
     pub total_score: u64,
     pub reward_pool: u64,
     pub vault_bump: u8,
+    pub state_bump: u8,
 }
 
 #[account]
@@ -256,4 +351,8 @@ pub enum ErrorCode {
     InvalidTier,
     #[msg("This tier is not eligible for rewards.")]
     TierNotEligible,
+    #[msg("Insufficient SOL balance in global_state.")]
+    InsufficientBalance,
+    #[msg("Insufficient token balance in reward vault.")]
+    InsufficientTokenBalance,
 }
