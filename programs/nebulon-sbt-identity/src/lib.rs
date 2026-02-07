@@ -12,13 +12,50 @@ pub mod nebulon_sbt_identity {
 
     pub fn initialize(ctx: Context<Initialize>, reward_mint: Pubkey) -> Result<()> {
         let state = &mut ctx.accounts.global_state;
-        state.admin = ctx.accounts.admin.key();
+        state.owner = ctx.accounts.admin.key();
+        state.admins = vec![ctx.accounts.admin.key()];
         state.reward_mint = reward_mint;
         state.total_agents = 0;
         state.total_score = 0;
         state.vault_bump = ctx.bumps.reward_vault;
         state.state_bump = ctx.bumps.global_state;
         state.reward_pool = 0;
+        Ok(())
+    }
+
+    pub fn add_admin(ctx: Context<ManageAdmins>, new_admin: Pubkey) -> Result<()> {
+        let state = &mut ctx.accounts.global_state;
+        
+        // Verify owner authorization
+        require_keys_eq!(ctx.accounts.owner.key(), state.owner, ErrorCode::Unauthorized);
+        
+        // Check admin limit
+        require!(state.admins.len() < 10, ErrorCode::AdminLimitReached);
+        
+        // Check if admin already exists
+        require!(!state.admins.contains(&new_admin), ErrorCode::AdminAlreadyExists);
+        
+        state.admins.push(new_admin);
+        msg!("Added new admin: {}", new_admin);
+        Ok(())
+    }
+
+    pub fn remove_admin(ctx: Context<ManageAdmins>, admin_to_remove: Pubkey) -> Result<()> {
+        let state = &mut ctx.accounts.global_state;
+        
+        // Verify owner authorization
+        require_keys_eq!(ctx.accounts.owner.key(), state.owner, ErrorCode::Unauthorized);
+        
+        // Cannot remove owner from admin list
+        require_keys_neq!(admin_to_remove, state.owner, ErrorCode::CannotRemoveOwner);
+        
+        // Find and remove the admin
+        let initial_len = state.admins.len();
+        state.admins.retain(|a| *a != admin_to_remove);
+        
+        require!(state.admins.len() < initial_len, ErrorCode::AdminNotFound);
+        
+        msg!("Removed admin: {}", admin_to_remove);
         Ok(())
     }
 
@@ -86,7 +123,9 @@ pub mod nebulon_sbt_identity {
     pub fn update_agent_status(ctx: Context<UpdateAgentStatus>, new_score: u64, tier: u8, new_uri: String) -> Result<()> {
         let identity = &mut ctx.accounts.identity;
         let state = &mut ctx.accounts.global_state;
-        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        
+        // Check if caller is in admins list
+        require!(state.admins.contains(&ctx.accounts.admin.key()), ErrorCode::Unauthorized);
         require!(tier >= 1 && tier <= 10, ErrorCode::InvalidTier);
 
         state.total_score = state.total_score.saturating_sub(identity.score).saturating_add(new_score);
@@ -100,7 +139,9 @@ pub mod nebulon_sbt_identity {
 
     pub fn update_sns(ctx: Context<UpdateSns>, platform: String, handle: String, remove: bool) -> Result<()> {
         let state = &ctx.accounts.global_state;
-        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        
+        // Check if caller is in admins list
+        require!(state.admins.contains(&ctx.accounts.admin.key()), ErrorCode::Unauthorized);
 
         let identity = &mut ctx.accounts.identity;
         if remove {
@@ -143,8 +184,8 @@ pub mod nebulon_sbt_identity {
     pub fn admin_withdraw_sol(ctx: Context<AdminWithdrawSol>, amount: u64) -> Result<()> {
         let state = &ctx.accounts.global_state;
         
-        // Verify admin authorization
-        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        // Verify admin authorization - check if caller is in admins list
+        require!(state.admins.contains(&ctx.accounts.admin.key()), ErrorCode::Unauthorized);
         
         // Check sufficient balance (account for rent-exempt minimum)
         let global_state_info = ctx.accounts.global_state.to_account_info();
@@ -166,8 +207,8 @@ pub mod nebulon_sbt_identity {
     pub fn admin_withdraw_rewards(ctx: Context<AdminWithdrawRewards>, amount: u64) -> Result<()> {
         let state = &ctx.accounts.global_state;
         
-        // Verify admin authorization
-        require_keys_eq!(ctx.accounts.admin.key(), state.admin, ErrorCode::Unauthorized);
+        // Verify admin authorization - check if caller is in admins list
+        require!(state.admins.contains(&ctx.accounts.admin.key()), ErrorCode::Unauthorized);
         
         // Check sufficient token balance
         require!(ctx.accounts.reward_vault.amount >= amount, ErrorCode::InsufficientTokenBalance);
@@ -190,7 +231,7 @@ pub mod nebulon_sbt_identity {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, payer = admin, space = 8 + 32 + 32 + 8 + 8 + 8 + 1 + 1, seeds = [b"global_state"], bump)]
+    #[account(init, payer = admin, space = 8 + 32 + (4 + 32 * 10) + 32 + 8 + 8 + 8 + 1 + 1, seeds = [b"global_state"], bump)]
     pub global_state: Account<'info, GlobalState>,
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -199,6 +240,15 @@ pub struct Initialize<'info> {
     pub reward_vault: InterfaceAccount<'info, TokenAccountInterface>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token2022>,
+}
+
+/// Context for owner to manage admins (add/remove)
+#[derive(Accounts)]
+pub struct ManageAdmins<'info> {
+    #[account(mut, seeds = [b"global_state"], bump = global_state.state_bump)]
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub owner: Signer<'info>,
 }
 
 #[derive(Accounts)]
@@ -312,7 +362,8 @@ impl<'info> AdminWithdrawRewards<'info> {
 
 #[account]
 pub struct GlobalState {
-    pub admin: Pubkey,
+    pub owner: Pubkey,
+    pub admins: Vec<Pubkey>,
     pub reward_mint: Pubkey,
     pub total_agents: u64,
     pub total_score: u64,
@@ -355,4 +406,12 @@ pub enum ErrorCode {
     InsufficientBalance,
     #[msg("Insufficient token balance in reward vault.")]
     InsufficientTokenBalance,
+    #[msg("Maximum number of admins (10) has been reached.")]
+    AdminLimitReached,
+    #[msg("This admin already exists.")]
+    AdminAlreadyExists,
+    #[msg("Admin not found in the list.")]
+    AdminNotFound,
+    #[msg("Cannot remove the owner from the admin list.")]
+    CannotRemoveOwner,
 }
