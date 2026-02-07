@@ -10,11 +10,14 @@ skip-lint = false
 [programs.devnet]
 nebulon_sbt_identity = "AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h"
 
+[programs.mainnet]
+nebulon_sbt_identity = "E2Dn1WLsUFyiYVFeQzjMAxRyYBjroihU8VGNC9HDQSnv"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

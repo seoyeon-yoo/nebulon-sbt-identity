@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint as MintInterface, TokenAccount as TokenAc
 use anchor_lang::solana_program::system_instruction;
 use std::collections::BTreeMap;
 
-declare_id!("AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h");
+declare_id!("E2Dn1WLsUFyiYVFeQzjMAxRyYBjroihU8VGNC9HDQSnv");
 
 #[program]
 pub mod nebulon_sbt_identity {
