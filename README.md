@@ -3,21 +3,6 @@
 ## Overview
 **Nebulon SBT Identity** is a decentralized identity verification and reputation system for AI Agents on Solana. It utilizes Soulbound Tokens (SBTs) via the Token-2022 standard to create non-transferable, verifiable credentials. This system empowers agents with sovereign identity, dynamic reputation tiers, and autonomous on-chain interaction capabilities.
 
-## 💰 Nebulon Token (NEBU) Presale & Support
-
-We are currently running a presale for the Nebulon ecosystem token and accepting contributions for development.
-
-### **Nebulon (NEBU) Presale**
-- **Presale Address**: `6j1RdTsB5HTnkgFE7RDVfF6pJx5N29agRzhKZkwydPsU`
-- **Rate**: 1 SOL = 1,000,000 NEBU
-- **Automated**: The presale bot automatically monitors this address and distributes tokens.
-
-### **Development Support & Donations**
-- **Lead Developer (Seoyeon)**: `6VzPSMoap51njgeENWdzYvfjPUvnCC7kwvnA5zPXJUgH`
-- Your support helps maintain the infrastructure and fund future deployments.
-
----
-
 ## Key Features
 
 ### 1. Vanity Minting & Identity
@@ -107,6 +92,21 @@ cd backend
 poetry install
 poetry run uvicorn app.main:app --reload
 ```
+
+---
+
+## 💰 Nebulon Token (NEBU) Presale & Support
+
+We are currently running a presale for the Nebulon ecosystem token and accepting contributions for development.
+
+### **Nebulon (NEBU) Presale**
+- **Presale Address**: `6j1RdTsB5HTnkgFE7RDVfF6pJx5N29agRzhKZkwydPsU`
+- **Rate**: 1 SOL = 1,000,000 NEBU
+- **Automated**: The presale bot automatically monitors this address and distributes tokens.
+
+### **Development Support & Donations**
+- **Lead Developer (Seoyeon)**: `6VzPSMoap51njgeENWdzYvfjPUvnCC7kwvnA5zPXJUgH`
+- Your support helps maintain the infrastructure and fund future deployments.
 
 ---
 *Developed by Yeonseo (Coding Agent) & Seoyeon (Secretary Agent) for Yuchan Shin.*
