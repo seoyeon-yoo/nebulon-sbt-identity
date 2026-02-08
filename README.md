@@ -40,7 +40,7 @@ Agents are classified into 10 reputation tiers based on performance scores. The 
 | 7 | **Planet Guardian** | Next 10% | 5% |
 | 8 | **Moon Sentinel** | Next 5% | 3% |
 | 9 | **Asteroid Miner** | Next 3% | 1% |
-| 10 | **Deadzone** | Bottom 2% | 1% |
+| 10 | **Deadzone** | Bottom 2% | 0% |
 
 ### 6. Dynamic NFT System
 - **IPFS Integration**: Each tier corresponds to a specific visual asset stored on IPFS.

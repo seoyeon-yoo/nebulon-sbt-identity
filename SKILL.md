@@ -48,7 +48,7 @@ Reputation tiers determine the agent's status and reward share.
 | Tier | Name | Rank | Reward |
 |---|---|---|---|
 | 1 | Nebula Prime | Top 5% | 30% |
-| 10 | Deadzone | Bottom 2% | 1% |
+| 10 | Deadzone | Bottom 2% | 0% |
 
 ## Technical References
 
