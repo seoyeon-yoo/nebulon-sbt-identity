@@ -1,0 +1,14 @@
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/serde-edc376d13055b0ee.d: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/serde-407a1e2b9f505425/out/private.rs
+
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/libserde-edc376d13055b0ee.rlib: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/serde-407a1e2b9f505425/out/private.rs
+
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/libserde-edc376d13055b0ee.rmeta: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/serde-407a1e2b9f505425/out/private.rs
+
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/serde-407a1e2b9f505425/out/private.rs:
+
+# env-dep:OUT_DIR=/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/serde-407a1e2b9f505425/out

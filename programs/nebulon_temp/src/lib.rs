@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("Hsb6bsCkWVg6nMh9MjxvyCWaEm14kEW7yRPEqgTttQhz");
+declare_id!("HurJWpsGH7oqbm9Z22iuy8ymVy2EKazGzCnqg8DvEkco");
 
 #[program]
 pub mod nebulon_temp {

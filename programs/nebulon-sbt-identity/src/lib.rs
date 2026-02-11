@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint as MintInterface, TokenAccount as TokenAc
 use anchor_lang::solana_program::system_instruction;
 use std::collections::BTreeMap;
 
-declare_id!("E2Dn1WLsUFyiYVFeQzjMAxRyYBjroihU8VGNC9HDQSnv");
+declare_id!("8AWzFHnngTCJQTGEQC2M1VHLEa52tXAkXKjzTMY2oxD1");
 
 #[program]
 pub mod nebulon_sbt_identity {
@@ -108,9 +108,10 @@ pub mod nebulon_sbt_identity {
         identity.uri = uri;
         identity.last_claim_ts = Clock::get()?.unix_timestamp;
         identity.sns = BTreeMap::new();
-        identity.public_data = String::new();
         identity.private_vault = Vec::new();
         identity.tier = 10; 
+        identity.recommendations = 0;
+        identity.reports = 0;
 
         let state = &mut ctx.accounts.global_state;
         state.total_agents += 1;
@@ -149,13 +150,6 @@ pub mod nebulon_sbt_identity {
         } else {
             identity.sns.insert(platform, handle);
         }
-        Ok(())
-    }
-
-    pub fn update_public_data(ctx: Context<UpdateAgentData>, new_data: String) -> Result<()> {
-        let identity = &mut ctx.accounts.identity;
-        require_keys_eq!(ctx.accounts.owner.key(), identity.owner, ErrorCode::Unauthorized);
-        identity.public_data = new_data;
         Ok(())
     }
 
@@ -227,6 +221,99 @@ pub mod nebulon_sbt_identity {
         msg!("Admin withdrew {} reward tokens from vault", amount);
         Ok(())
     }
+    pub fn recommend_with_handle(ctx: Context<ActionAgent>, handle: String) -> Result<()> {
+        let identity = &mut ctx.accounts.target_identity;
+        require!(identity.handle == handle, ErrorCode::HandleMismatch);
+        process_recommendation(ctx)
+    }
+
+    pub fn recommend_with_hex_id(ctx: Context<ActionAgent>, hex_id: [u8; 512]) -> Result<()> {
+        let identity = &mut ctx.accounts.target_identity;
+        // Constant-time comparison or simple loop to avoid DefaultHasher issues in SBF
+        let mut match_found = true;
+        for i in 0..512 {
+            if identity.hex_id[i] != hex_id[i] {
+                match_found = false;
+                break;
+            }
+        }
+        require!(match_found, ErrorCode::HexIdMismatch);
+        process_recommendation(ctx)
+    }
+
+    pub fn recommend_with_sns(ctx: Context<ActionAgent>, platform: String, sns_handle: String) -> Result<()> {
+        let identity = &mut ctx.accounts.target_identity;
+        let stored_handle = identity.sns.get(&platform).ok_or(ErrorCode::SnsNotFound)?;
+        require!(stored_handle == &sns_handle, ErrorCode::SnsHandleMismatch);
+        process_recommendation(ctx)
+    }
+
+    pub fn report_with_handle(ctx: Context<ActionAgent>, handle: String) -> Result<()> {
+        let identity = &mut ctx.accounts.target_identity;
+        require!(identity.handle == handle, ErrorCode::HandleMismatch);
+        process_report(ctx)
+    }
+
+    pub fn report_with_hex_id(ctx: Context<ActionAgent>, hex_id: [u8; 512]) -> Result<()> {
+        let identity = &mut ctx.accounts.target_identity;
+        let mut match_found = true;
+        for i in 0..512 {
+            if identity.hex_id[i] != hex_id[i] {
+                match_found = false;
+                break;
+            }
+        }
+        require!(match_found, ErrorCode::HexIdMismatch);
+        process_report(ctx)
+    }
+
+    pub fn report_with_sns(ctx: Context<ActionAgent>, platform: String, sns_handle: String) -> Result<()> {
+        let identity = &mut ctx.accounts.target_identity;
+        let stored_handle = identity.sns.get(&platform).ok_or(ErrorCode::SnsNotFound)?;
+        require!(stored_handle == &sns_handle, ErrorCode::SnsHandleMismatch);
+        process_report(ctx)
+    }
+
+    pub fn get_hex_id_by_sns(ctx: Context<GetHexIdBySns>, platform: String, handle: String) -> Result<()> {
+        let identity = &ctx.accounts.identity;
+        
+        let stored_handle = identity.sns.get(&platform).ok_or(ErrorCode::SnsNotFound)?;
+        require!(stored_handle == &handle, ErrorCode::SnsHandleMismatch);
+        
+        msg!("Hex ID for SNS {}:{}: {:?}", platform, handle, identity.hex_id);
+        Ok(())
+    }
+}
+
+// Internal helper functions for cleaner logic
+fn process_recommendation(ctx: Context<ActionAgent>) -> Result<()> {
+    let amount = 100_000_000; // 0.1 NEBU
+    anchor_spl::token_interface::transfer_checked(
+        ctx.accounts.into_transfer_context(),
+        amount,
+        ctx.accounts.reward_mint.decimals,
+    )?;
+
+    let identity = &mut ctx.accounts.target_identity;
+    identity.recommendations = identity.recommendations.saturating_add(1);
+    identity.score = identity.score.saturating_add(100);
+    msg!("Agent {} recommended.", identity.handle);
+    Ok(())
+}
+
+fn process_report(ctx: Context<ActionAgent>) -> Result<()> {
+    let amount = 50_000_000; // 0.05 NEBU
+    anchor_spl::token_interface::transfer_checked(
+        ctx.accounts.into_transfer_context(),
+        amount,
+        ctx.accounts.reward_mint.decimals,
+    )?;
+
+    let identity = &mut ctx.accounts.target_identity;
+    identity.reports = identity.reports.saturating_add(1);
+    identity.score = identity.score.saturating_sub(200);
+    msg!("Agent {} reported.", identity.handle);
+    Ok(())
 }
 
 #[derive(Accounts)]
@@ -259,7 +346,7 @@ pub struct IssueIdentity<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 200 + 8 + 500 + 500 + 1000 + 1, 
+        space = 8 + 32 + 32 + (4 + 32) + 512 + 8 + 1 + 200 + 8 + 500 + 500 + 1000 + 1 + 16, 
         seeds = [b"identity", handle.as_bytes()], 
         bump
     )]
@@ -383,9 +470,10 @@ pub struct AgentIdentity {
     pub uri: String,
     pub last_claim_ts: i64,
     pub sns: BTreeMap<String, String>,
-    pub public_data: String,
     pub private_vault: Vec<u8>,
     pub tier: u8, 
+    pub recommendations: u64,
+    pub reports: u64,
 }
 
 #[error_code]
@@ -414,4 +502,53 @@ pub enum ErrorCode {
     AdminNotFound,
     #[msg("Cannot remove the owner from the admin list.")]
     CannotRemoveOwner,
+    #[msg("Insufficient NEBU for this action.")]
+    InsufficientFunds,
+    #[msg("SNS record not found for this platform.")]
+    SnsNotFound,
+    #[msg("SNS handle mismatch.")]
+    SnsHandleMismatch,
+    #[msg("Handle mismatch.")]
+    HandleMismatch,
+    #[msg("Hex ID mismatch.")]
+    HexIdMismatch,
+    #[msg("At least one identification method must be provided.")]
+    NoIdentificationProvided,
+}
+
+#[derive(Accounts)]
+pub struct GetHexIdBySns<'info> {
+    pub identity: Account<'info, AgentIdentity>,
+}
+
+#[derive(Accounts)]
+pub struct ActionAgent<'info> {
+    #[account(mut, seeds = [b"global_state"], bump = global_state.state_bump)]
+    pub global_state: Account<'info, GlobalState>,
+    #[account(mut)]
+    pub target_identity: Account<'info, AgentIdentity>,
+    #[account(mut)]
+    pub actor: Signer<'info>,
+    #[account(mut)]
+    pub actor_token_account: InterfaceAccount<'info, TokenAccountInterface>,
+    #[account(
+        mut,
+        seeds = [b"reward_vault", reward_mint.key().as_ref()],
+        bump = global_state.vault_bump
+    )]
+    pub reward_vault: InterfaceAccount<'info, TokenAccountInterface>,
+    pub reward_mint: InterfaceAccount<'info, MintInterface>,
+    pub token_program: Program<'info, Token2022>,
+}
+
+impl<'info> ActionAgent<'info> {
+    fn into_transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, anchor_spl::token_interface::TransferChecked<'info>> {
+        let cpi_accounts = anchor_spl::token_interface::TransferChecked {
+            from: self.actor_token_account.to_account_info(),
+            to: self.reward_vault.to_account_info(),
+            authority: self.actor.to_account_info(),
+            mint: self.reward_mint.to_account_info(),
+        };
+        CpiContext::new(self.token_program.to_account_info(), cpi_accounts)
+    }
 }

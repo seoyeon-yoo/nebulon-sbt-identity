@@ -1,0 +1,14 @@
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/thiserror-3f07be92bfeee6d7.d: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/thiserror-d2818f92ff0eba89/out/private.rs
+
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/libthiserror-3f07be92bfeee6d7.rlib: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/thiserror-d2818f92ff0eba89/out/private.rs
+
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/libthiserror-3f07be92bfeee6d7.rmeta: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/thiserror-d2818f92ff0eba89/out/private.rs
+
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs:
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs:
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/thiserror-d2818f92ff0eba89/out/private.rs:
+
+# env-dep:OUT_DIR=/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/build/thiserror-d2818f92ff0eba89/out

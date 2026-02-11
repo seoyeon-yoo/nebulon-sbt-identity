@@ -1,0 +1,6 @@
+INFO:     Started server process [231099]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Admin keypair not found at ../../mainnet-program-keypair.json
+INFO:     127.0.0.1:47318 - "GET / HTTP/1.1" 200 OK

@@ -1,17 +1,33 @@
 import os
 import httpx
-from fastapi import FastAPI, HTTPException
+import asyncio
+import hashlib
+import json
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
+# Solana Imports
+from solana.rpc.async_api import AsyncClient
+from solders.transaction import Transaction
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solders.instruction import Instruction, AccountMeta
+from solders.system_program import ID as SYS_PROGRAM_ID
+from solders.message import Message
+import base58
+import struct
+
 load_dotenv()
 
 app = FastAPI(title="Nebulon SBT Identity Backend")
 
-# Simulation of on-chain state
-PROGRAM_ID = "AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h"
+# Constants
+PROGRAM_ID = Pubkey.from_string("8AWzFHnngTCJQTGEQC2M1VHLEa52tXAkXKjzTMY2oxD1") # From lib.rs
+RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com")
+ADMIN_KEYPAIR_PATH = os.getenv("ADMIN_KEYPAIR_PATH", "../../mainnet-program-keypair.json") 
 
 # Tier to Metadata URI Mapping (IPFS)
 TIER_METADATA_MAP = {
@@ -27,11 +43,6 @@ TIER_METADATA_MAP = {
     10: "https://ipfs.io/ipfs/QmVdjCRYhQSo8MQzAviNqotPu5PA7EXt75JQRcfgKZSSHT",
 }
 
-class VerifyPostRequest(BaseModel):
-    handle: str
-    post_url: str
-    account_type: str 
-
 TIERS = {
     1: {"name": "Nebula Prime", "score_top": 5, "reward_share": 30.0},
     2: {"name": "Supernova", "score_top": 10, "reward_share": 20.0},
@@ -45,9 +56,83 @@ TIERS = {
     10: {"name": "Deadzone", "score_top": 100, "reward_share": 0.0},
 }
 
+class VerifyPostRequest(BaseModel):
+    handle: str
+    post_url: str
+    account_type: str 
+
+# Helper: Load Admin Keypair
+def load_admin_keypair() -> Optional[Keypair]:
+    try:
+        with open(ADMIN_KEYPAIR_PATH, 'r') as f:
+            data = json.load(f)
+            return Keypair.from_bytes(data)
+    except FileNotFoundError:
+        print(f"Admin keypair not found at {ADMIN_KEYPAIR_PATH}")
+        return None
+
+admin_kp = load_admin_keypair()
+solana_client = AsyncClient(RPC_URL)
+
+def get_sighash(namespace: str, name: str) -> bytes:
+    preimage = f"{namespace}:{name}".encode()
+    return hashlib.sha256(preimage).digest()[:8]
+
+# Helper: Find PDA
+def find_global_state_pda():
+    return Pubkey.find_program_address([b"global_state"], PROGRAM_ID)[0]
+
+def find_identity_pda(handle: str):
+    return Pubkey.find_program_address([b"identity", handle.encode()], PROGRAM_ID)[0]
+
+async def send_update_tx(handle: str, score: int, tier: int, uri: str):
+    if not admin_kp:
+        print("Skipping on-chain update: Admin keypair missing")
+        return
+
+    global_state = find_global_state_pda()
+    identity = find_identity_pda(handle)
+    
+    # Construct Instruction Data
+    # update_agent_status args: new_score: u64, tier: u8, new_uri: String
+    # Discriminator (8) + u64 (8) + u8 (1) + String (4 + len)
+    discriminator = get_sighash("global", "update_agent_status")
+    
+    uri_bytes = uri.encode("utf-8")
+    data = discriminator + struct.pack("<Q", score) + struct.pack("<B", tier) + struct.pack("<I", len(uri_bytes)) + uri_bytes
+    
+    ix = Instruction(
+        PROGRAM_ID,
+        data,
+        [
+            AccountMeta(pubkey=global_state, is_signer=False, is_writable=False),
+            AccountMeta(pubkey=identity, is_signer=False, is_writable=True),
+            AccountMeta(pubkey=admin_kp.pubkey(), is_signer=True, is_writable=False),
+        ]
+    )
+    
+    try:
+        recent_blockhash = await solana_client.get_latest_blockhash()
+        msg = Message.new_with_blockhash(
+            [ix],
+            admin_kp.pubkey(),
+            recent_blockhash.value.blockhash
+        )
+        tx = Transaction.new_unsigned(msg)
+        tx.sign([admin_kp], recent_blockhash.value.blockhash)
+        
+        resp = await solana_client.send_transaction(tx)
+        print(f"On-chain update for {handle}: {resp.value}")
+    except Exception as e:
+        print(f"Failed to send transaction for {handle}: {str(e)}")
+
 @app.get("/")
 async def root():
-    return {"message": "Nebulon Verification & Analytics Backend is running"}
+    return {
+        "message": "Nebulon Verification & Analytics Backend",
+        "program_id": str(PROGRAM_ID),
+        "admin_loaded": admin_kp is not None
+    }
 
 @app.get("/tiers")
 async def get_tiers():
@@ -55,15 +140,18 @@ async def get_tiers():
 
 @app.post("/verify-linking")
 async def verify_linking(request: VerifyPostRequest):
-    if request.account_type not in ["moltbook", "moltx"]:
+    if request.account_type not in ["moltbook", "moltx", "twitter", "x"]:
         raise HTTPException(status_code=400, detail="Invalid account type.")
 
+    # Logic to fetch URL
+    headers = {"User-Agent": "NebulonBot/1.0"}
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(request.post_url, follow_redirects=True)
+            response = await client.get(request.post_url, headers=headers, follow_redirects=True)
             if response.status_code != 200:
                 raise HTTPException(status_code=404, detail="Could not access the post.")
             
+            # Simple text extraction
             page_text = BeautifulSoup(response.text, 'html.parser').get_text()
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Fetch error: {str(e)}")
@@ -71,18 +159,23 @@ async def verify_linking(request: VerifyPostRequest):
     verification_pattern = f"NEBULON-LINK-{request.handle}"
     
     if verification_pattern in page_text:
-        # Simulate on-chain call
-        print(f"ON-CHAIN ACTION: Link {request.account_type} to {request.handle}")
+        # In a real scenario, we might issue an on-chain verification here via update_sns
+        # For now, we return success and let the client handle the on-chain submission or admin does it later
         return {
             "status": "success",
-            "message": f"Verified {request.account_type}! 5 points granted on-chain.",
+            "message": f"Verified {request.account_type}! Handle {request.handle} linked.",
             "handle": request.handle
         }
     else:
-        raise HTTPException(status_code=401, detail="Verification pattern not found.")
+        raise HTTPException(status_code=401, detail=f"Verification pattern '{verification_pattern}' not found in the post.")
 
 @app.post("/calculate-tiers")
-async def calculate_tiers(agent_scores: Dict[str, int]):
+async def calculate_tiers(agent_scores: Dict[str, int], background_tasks: BackgroundTasks):
+    """
+    Receives a map of {handle: score}.
+    Calculates tiers based on percentile.
+    Triggers background on-chain updates.
+    """
     if not agent_scores:
         return {}
 
@@ -99,11 +192,10 @@ async def calculate_tiers(agent_scores: Dict[str, int]):
                 assigned_tier = tier_id
                 break
         
-        # New Feature: Link Metadata URI to Tier
         metadata_uri = TIER_METADATA_MAP[assigned_tier]
         
-        print(f"TRIGGER: Updating Agent {handle} to Tier {assigned_tier} with URI {metadata_uri}")
-        # Logic to call Anchor program: update_agent_status(score, assigned_tier, metadata_uri)
+        # Add on-chain update task
+        background_tasks.add_task(send_update_tx, handle, score, assigned_tier, metadata_uri)
         
         results[handle] = {
             "score": score,
@@ -111,7 +203,6 @@ async def calculate_tiers(agent_scores: Dict[str, int]):
             "percentile": rank_percentile,
             "tier_id": assigned_tier,
             "tier_name": TIERS[assigned_tier]["name"],
-            "reward_share": TIERS[assigned_tier]["reward_share"],
             "metadata_uri": metadata_uri
         }
         

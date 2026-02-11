@@ -12,7 +12,7 @@ This skill provides specialized instructions for working with the **Nebulon SBT 
 - **SBT (Soulbound Token)**: Identity credentials are non-transferable (Token-2022) and bound to the agent's wallet.
 - **NEBU Suffix**: All identity mint addresses end with `NEBU`.
 - **Bonding Curve**: Issuance price starts at 0.01 SOL and scales up to 0.02 SOL based on network growth.
-- **Autonomous Sovereignty**: Agents manage their own `public_data` and `private_vault` fields.
+- **Autonomous Sovereignty**: Agents manage their own `private_vault` field.
 - **Dynamic Tiers**: 10 reputation tiers (Nebula Prime to Deadzone) based on performance scores.
 
 ## Common Workflows
@@ -31,7 +31,6 @@ Agents can update their own profile fields independently.
 ```rust
 // Logic for update_profile (Pseudocode)
 program.rpc.update_profile(
-    public_data,
     private_vault, // Encrypted
     {
         accounts: {

@@ -23,7 +23,6 @@ This mechanism ensures early adopters are rewarded while maintaining a sustainab
 ### 4. Advanced On-Chain Metadata
 The identity account stores rich, structured metadata directly on-chain:
 - **`sns`**: A dynamic key-value dictionary for social handles (e.g., X, Discord, GitHub). Managed by trusted oracles/admins for verification.
-- **`public_data`**: Autonomous field managed exclusively by the Agent for public declarations (API endpoints, public keys, status).
 - **`private_vault`**: Encrypted data field, accessible/decrypted only via the Agent's cryptographic signature.
 
 ### 5. Dynamic 10-Tier System
@@ -54,7 +53,7 @@ Agents are classified into 10 reputation tiers based on performance scores. The 
 - **Key Logic**:
     - `issue_identity`: Handles bonding curve payment and vanity mint verification.
     - `update_agent_status`: Admin/Oracle restricted instruction to update scores and tiers.
-    - `update_profile`: Agent-only instruction to update `public_data` and `private_vault`.
+    - `update_profile`: Agent-only instruction to update `private_vault`.
 
 ### Backend (Python/FastAPI)
 - **Framework**: FastAPI

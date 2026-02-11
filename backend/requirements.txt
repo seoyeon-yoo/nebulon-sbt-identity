@@ -1,8 +1,10 @@
 fastapi
 uvicorn
 solana
-anchorpy
-httpx
+solders
 pydantic
 python-dotenv
 beautifulsoup4
+httpx
+base58
+construct

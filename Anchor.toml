@@ -1,7 +1,7 @@
 [toolchain]
-package_manager = "yarn"
 anchor_version = "0.31.0"
 solana_version = "1.18.26"
+package_manager = "yarn"
 
 [features]
 resolution = true
@@ -11,7 +11,7 @@ skip-lint = false
 nebulon_sbt_identity = "AVPj6DchcE2yZQPidaYqt2MoyNx3TyH1BpRyB9E1TW7h"
 
 [programs.mainnet]
-nebulon_sbt_identity = "E2Dn1WLsUFyiYVFeQzjMAxRyYBjroihU8VGNC9HDQSnv"
+nebulon_sbt_identity = "8AWzFHnngTCJQTGEQC2M1VHLEa52tXAkXKjzTMY2oxD1"
 
 [registry]
 url = "https://api.apr.dev"

@@ -1,0 +1,5 @@
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/spl_discriminator_derive-f4c300643bf9479f.d: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-discriminator-derive-0.2.0/src/lib.rs
+
+/home/yuchan/ai-wsp/clawd-main/nebulon-sbt-identity/target/release/deps/libspl_discriminator_derive-f4c300643bf9479f.so: /home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-discriminator-derive-0.2.0/src/lib.rs
+
+/home/yuchan/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/spl-discriminator-derive-0.2.0/src/lib.rs:
